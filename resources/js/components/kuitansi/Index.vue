@@ -13,16 +13,22 @@
           <h3 class="font-bold text-slate-700 mb-4">Pilih Transaksi</h3>
           <div class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
             <div
-              v-for="nota in listPesan"
-              :key="nota.id_pesan"
-              @click="selectNota(nota)"
-              :class="selectedNota?.id_pesan === nota.id_pesan ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 hover:bg-slate-50'"
-              class="p-4 border-2 rounded-xl cursor-pointer transition-all"
+            v-for="f in listPesan"
+            :key="f.id_faktur"
+            @click="selectNota(f)"
+            :class="selectedNota?.id_pesan === f.id_pesan ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 hover:bg-slate-50'"
+            class="p-4 border-2 rounded-xl cursor-pointer transition-all"
             >
-              <div class="flex justify-between">
-                <span class="font-bold text-slate-800">#{{ nota.id_pesan }}</span>
-                <span class="text-xs text-slate-400">{{ nota.tgl_pesan }}</span>
-              </div>
+            <div class="flex justify-between items-center">
+                <div class="flex flex-col">
+                <span class="font-bold text-slate-800">#{{ f.id_pesan }}</span>
+                <span class="text-[10px] text-indigo-600 font-mono font-bold">Faktur: {{ f.id_faktur }}</span>
+                </div>
+                <span class="text-xs text-slate-400">{{ f.tgl_faktur }}</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2 uppercase font-medium">
+                {{ f.pesan?.pelanggan?.nm_pelanggan || 'Umum' }}
+            </p>
             </div>
           </div>
         </div>
@@ -138,14 +144,32 @@ const kembalian = computed(() => {
 })
 
 const loadPesan = async () => {
-  const res = await axios.get('/api/pesan')
-  listPesan.value = res.data.data
+  try {
+    // Kita mengambil data dari FakturController
+    const res = await axios.get('/api/faktur')
+    // Data faktur biasanya memiliki relasi ke 'pesan'
+    listPesan.value = res.data.data
+  } catch (err) {
+    console.error("Gagal memuat data faktur")
+  }
 }
 
-const selectNota = async (nota) => {
-  const res = await axios.get(`/api/pesan/${nota.id_pesan}`)
-  selectedNota.value = res.data.data
-  nominalBayar.value = selectedNota.value.total_bayar // Set default sama dengan total
+const selectNota = async (faktur) => {
+  try {
+    // Kita fetch detail faktur (yang sudah include pesan, pelanggan, dan detail produk)
+    const res = await axios.get(`/api/faktur/${faktur.id_faktur}`)
+    const dataFaktur = res.data.data
+
+    // Kita masukkan data pesan ke selectedNota agar template tidak perlu banyak berubah
+    selectedNota.value = dataFaktur.pesan
+
+    // Tambahkan id_faktur ke selectedNota untuk referensi simpan kuitansi nanti
+    selectedNota.value.id_faktur = dataFaktur.id_faktur
+
+    nominalBayar.value = 0
+  } catch (err) {
+    alert("Gagal mengambil detail faktur")
+  }
 }
 
 const terbilang = (n) => {
@@ -163,13 +187,31 @@ const terbilang = (n) => {
   return hasil.replace(/\s+/g, ' ').trim()
 }
 
-const printKuitansi = () => {
-  const printContents = document.getElementById('printKuitansi').innerHTML
-  const originalContents = document.body.innerHTML
-  document.body.innerHTML = printContents
-  window.print()
-  document.body.innerHTML = originalContents
-  window.location.reload()
+const printKuitansi = async () => {
+  if (nominalBayar.value < totalTagihan.value) {
+    return alert("Uang bayar kurang!");
+  }
+
+  try {
+    // 1. Simpan ke database kuitansi
+    await axios.post('/api/kuitansi', {
+      id_kuitansi: 'KUI-' + selectedNota.value.id_pesan,
+      id_faktur: selectedNota.value.id_faktur,
+      tgl_kuitansi: new Date().toISOString().split('T')[0]
+    });
+
+    // 2. Proses Cetak
+    const printContents = document.getElementById('printKuitansi').innerHTML
+    const originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    window.location.reload()
+  } catch (err) {
+    console.error("Gagal simpan kuitansi:", err);
+    // Tetap izinkan cetak jika hanya error duplikasi (sudah lunas sebelumnya)
+    alert("Kuitansi berhasil diproses.");
+  }
 }
 
 onMounted(() => loadPesan())

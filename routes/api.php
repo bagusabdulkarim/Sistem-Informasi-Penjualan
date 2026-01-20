@@ -52,13 +52,12 @@ Route::apiResource('/faktur', FakturController::class);
 // Membuat Route untuk Kuitansi
 Route::apiResource('/kuitansi', KuitansiController::class);
 
+
+});
 // Route untuk laporan penjualan harian
 Route::get('/laporan/penjualan', [LaporanController::class, 'penjualanHarian']);
 
 // Laporan produk terlaris
 Route::get('/laporan/produk-terlaris', [LaporanController::class, 'produkTerlaris']);
-
 // Export laporan penjualan ke PDF
 Route::get('/laporan/export-pdf', [LaporanController::class, 'exportPDF']);
-
-});

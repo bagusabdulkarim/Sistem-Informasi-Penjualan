@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('faktur', function (Blueprint $table) {
-            // id_faktur int(5) PRIMARY KEY
-            $table->integer('id_faktur')->primary();
+            // id_faktur string(5) PRIMARY KEY
+            $table->string('id_faktur')->primary();
 
             // id_pesan int(5) - Foreign Key ke tabel pesan
             $table->integer('id_pesan');

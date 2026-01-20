@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('kuitansi', function (Blueprint $table) {
-            // id_kuitansi int(5) PRIMARY KEY
-            $table->integer('id_kuitansi')->primary();
+            // id_kuitansi string(5) PRIMARY KEY
+            $table->string('id_kuitansi')->primary();
 
-            // id_faktur int(5) - Foreign Key ke tabel faktur
-            $table->integer('id_faktur');
+            // id_faktur string(5) - Foreign Key ke tabel faktur
+            $table->string('id_faktur');
 
             // tgl_kuitansi date
             $table->date('tgl_kuitansi');

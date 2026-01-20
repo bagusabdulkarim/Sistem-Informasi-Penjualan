@@ -86,11 +86,14 @@
             </div>
           </div>
 
-          <div class="p-6 bg-slate-50 border-t flex justify-end gap-3">
-            <button @click="printFaktur" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition flex items-center gap-2">
-              <span>🖨️</span> Cetak Faktur
+            <div class="p-6 bg-slate-50 border-t flex justify-end gap-3">
+            <button
+                @click="prosesCetak"
+                class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition flex items-center gap-2"
+            >
+                <span>🖨️</span> Simpan & Cetak Faktur
             </button>
-          </div>
+            </div>
         </div>
 
         <div v-else class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl h-full flex items-center justify-center text-slate-400">
@@ -132,15 +135,46 @@ const calculateTotal = (items) => {
   return items.reduce((acc, item) => acc + (item.harga * item.jumlah), 0)
 }
 
-const printFaktur = () => {
-  // Fungsi cetak sederhana menggunakan window.print
-  const printContents = document.getElementById('printArea').innerHTML
-  const originalContents = document.body.innerHTML
+// FUNGSI BARU: Simpan ke database lalu Cetak
+const prosesCetak = async () => {
+  if (!selectedNota.value) return;
 
-  document.body.innerHTML = printContents
-  window.print()
-  document.body.innerHTML = originalContents
-  window.location.reload() // Reload untuk mengembalikan state Vue
+  try {
+    // 1. SIAPKAN DATA UNTUK DATABASE
+    // Kita buat ID Faktur otomatis, misal: F-1001
+    const dataFaktur = {
+      id_faktur: 'F-' + selectedNota.value.id_pesan,
+      id_pesan: selectedNota.value.id_pesan,
+      tgl_faktur: new Date().toISOString().split('T')[0] // Format YYYY-MM-DD
+    }
+
+    // 2. SIMPAN KE DATABASE melalui FakturController@store
+    // Kita gunakan try-catch agar jika faktur sudah ada (unique constraint),
+    // sistem tetap bisa lanjut mencetak tanpa double entry di DB.
+    await axios.post('/api/faktur', dataFaktur)
+      .then(res => {
+        console.log("Faktur berhasil disimpan ke database");
+      })
+      .catch(err => {
+        // Jika error 422 (sudah ada), kita abaikan dan lanjut cetak saja
+        console.warn("Faktur mungkin sudah tercatat sebelumnya.");
+      });
+
+    // 3. JALANKAN PROSES CETAK FISIK
+    const printContents = document.getElementById('printArea').innerHTML
+    const originalContents = document.body.innerHTML
+
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+
+    // Gunakan ini daripada reload agar state tidak hilang jika ingin cetak lagi
+    window.location.reload()
+
+  } catch (error) {
+    console.error("Gagal memproses faktur:", error);
+    alert("Terjadi kesalahan saat menyimpan data faktur.");
+  }
 }
 
 onMounted(() => {

@@ -48,6 +48,10 @@
             <span class="mr-3">💳</span> Data Kuitansi
           </button>
 
+          <button @click="navigate('laporan')" :class="menuClass('laporan')">
+            <span class="mr-3">📊</span> Laporan
+          </button>
+
           <div class="pt-6 mt-6 border-t border-indigo-900">
             <button @click="handleLogout" class="w-full flex items-center px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-xl transition">
               <span class="mr-3">🚪</span> Logout
@@ -109,6 +113,9 @@
           <div v-if="view === 'kuitansi'">
             <KuitansiIndex />
           </div>
+          <div v-if="view === 'laporan'">
+            <LaporanIndex />
+          </div>
 
           <div v-if="[ ].includes(view)" class="bg-white p-10 rounded-2xl text-center shadow-sm">
              <div class="text-5xl mb-4">🚧</div>
@@ -130,6 +137,7 @@ import ProdukIndex from './produk/Index.vue'
 import PesanIndex from './pesan/Index.vue'
 import FakturIndex from './faktur/Index.vue'
 import KuitansiIndex from './kuitansi/Index.vue'
+import LaporanIndex from './laporan/Index.vue'
 
 const isLoggedIn = ref(false)
 const authPage = ref('login')
